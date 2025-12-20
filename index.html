@@ -12,9 +12,7 @@
       margin: 40px auto;
       padding: 0 16px;
     }
-
     h1 { margin-bottom: 6px; }
-
     .muted { color: #555; }
 
     label {
@@ -44,11 +42,7 @@
       cursor: not-allowed;
     }
 
-    .status {
-      margin-top: 16px;
-      font-weight: 700;
-    }
-
+    .status { margin-top: 16px; font-weight: 700; }
     .ok { color: #0a6b0a; }
     .error { color: #b00020; }
 
@@ -75,12 +69,14 @@
 <h1>Magyar keresztnév-kereső</h1>
 <div class="muted">
   Szabályok:
-  <br>1️⃣ nincs betűismétlés a vezetéknév + keresztnév együtteseiben (magyar kettősbetűk egynek számítanak)
-  <br>2️⃣ mássalhangzó ↔ magánhangzó váltakozás a névhatáron
+  <br>1️⃣ A vezetéknévben <b>lehet</b> betűismétlődés (pl. <code>Bárány</code> OK).
+  <br>2️⃣ A keresztnévben <b>nem lehet</b> betűismétlődés (pl. <code>Kati</code> OK, <code>Kata</code> NEM).
+  <br>3️⃣ A vezetéknév és keresztnév között ne legyen közös betű/token (magyar kettősbetűk egynek számítanak).
+  <br>4️⃣ Mássalhangzó ↔ magánhangzó váltakozás a névhatáron.
 </div>
 
 <label for="surname">Vezetéknév</label>
-<input id="surname" placeholder="pl. Kovács">
+<input id="surname" placeholder="pl. Bárány">
 
 <label for="gender">Keresztnév típusa</label>
 <select id="gender">
@@ -95,7 +91,6 @@
 
 <script>
 (() => {
-
   const MULTI = ["dzs","dz","cs","gy","ly","ny","sz","ty","zs"];
   const VOWELS = new Set(["a","á","e","é","i","í","o","ó","ö","ő","u","ú","ü","ű"]);
 
@@ -115,31 +110,21 @@
     const s = normalize(word);
     const tokens = [];
     let i = 0;
-
     while (i < s.length) {
       let found = null;
       for (const m of MULTI) {
-        if (s.startsWith(m, i)) {
-          found = m;
-          break;
-        }
+        if (s.startsWith(m, i)) { found = m; break; }
       }
-      if (found) {
-        tokens.push(found);
-        i += found.length;
-      } else {
-        tokens.push(s[i]);
-        i++;
-      }
+      if (found) { tokens.push(found); i += found.length; }
+      else { tokens.push(s[i]); i++; }
     }
-    return tokens;
+    return tokens.filter(Boolean);
   }
 
-  function isVowel(tok) {
-    return VOWELS.has(tok);
-  }
+  function isVowel(tok) { return VOWELS.has(tok); }
 
-  function unique(tokens) {
+  // csak keresztnévre használjuk: ott tényleg tiltsuk az ismétlést
+  function hasNoRepeats(tokens) {
     return new Set(tokens).size === tokens.length;
   }
 
@@ -147,21 +132,31 @@
     const sTok = tokenizeHu(surname);
     const gTok = tokenizeHu(given);
 
-    if (!unique(sTok) || !unique(gTok)) return false;
+    if (sTok.length === 0 || gTok.length === 0) return false;
 
+    // (4) váltakozás a névhatáron
     const endVowel   = isVowel(sTok[sTok.length - 1]);
     const startVowel = isVowel(gTok[0]);
     if (endVowel === startVowel) return false;
 
-    return unique([...sTok, ...gTok]);
+    // (2) keresztnévben nincs ismétlés -> ezért rossz a "Kata"
+    if (!hasNoRepeats(gTok)) return false;
+
+    // (3) vezetéknév és keresztnév között ne legyen közös token
+    // Itt a vezetéknév duplikátumait figyelmen kívül hagyjuk (Set)
+    const sSet = new Set(sTok);
+    for (const t of gTok) {
+      if (sSet.has(t)) return false;
+    }
+
+    return true;
   }
 
   async function loadTxt(path) {
     const r = await fetch(path, { cache: "no-store" });
     if (!r.ok) throw new Error("Nem tölthető: " + path);
-    return r.text().then(t =>
-      t.split(/\r?\n/).map(x => x.trim()).filter(Boolean)
-    );
+    const text = await r.text();
+    return text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
   }
 
   $runBtn.addEventListener("click", async () => {
@@ -176,11 +171,9 @@
     $status.textContent = "Névlista betöltése…";
 
     try {
-      const file = $gender.value === "female"
-        ? "lany_nevek.txt"
-        : "fiu_nevek.txt";
-
+      const file = $gender.value === "female" ? "lany_nevek.txt" : "fiu_nevek.txt";
       const names = await loadTxt(file);
+
       const matches = names.filter(n => canCombine(surname, n));
 
       if (matches.length === 0) {
@@ -189,16 +182,12 @@
         return;
       }
 
-      $status.innerHTML =
-        `<span class='ok'>${matches.length} megfelelő keresztnév található.</span>`;
-
-      $results.innerHTML =
-        matches.map(n => `${surname} ${n}`).join("<br>");
-
+      $status.innerHTML = `<span class='ok'>${matches.length} megfelelő keresztnév található.</span>`;
+      $results.innerHTML = matches.map(n => `${surname} ${n}`).join("<br>");
       $results.style.display = "block";
+
     } catch (e) {
-      $status.innerHTML =
-        `<span class='error'>Hiba:</span> ${e.message}`;
+      $status.innerHTML = `<span class='error'>Hiba:</span> ${e.message}`;
     }
 
     $runBtn.disabled = false;
