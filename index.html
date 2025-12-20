@@ -2,95 +2,132 @@
 <html lang="hu">
 <head>
   <meta charset="utf-8">
-  <title>Magyar keresztnév-kereső</title>
+  <title>Magyar keresztnév-kereső (szabálykapcsolókkal)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      max-width: 900px;
-      margin: 40px auto;
-      padding: 0 16px;
-    }
-    h1 { margin-bottom: 6px; }
-    .muted { color: #555; }
-
-    label {
-      display: block;
-      margin-top: 14px;
-      font-weight: 700;
-    }
-
-    input, select, button {
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 980px; margin: 40px auto; padding: 0 16px; }
+    h1 { margin: 0 0 8px; }
+    .muted { color: #555; line-height: 1.4; }
+    .card { border: 1px solid #ddd; border-radius: 14px; padding: 16px; margin-top: 16px; }
+    label.top { display:block; margin-top: 12px; font-weight: 800; }
+    input[type="text"], select, button {
       width: 100%;
       font-size: 16px;
-      padding: 10px;
-      margin-top: 6px;
-      border-radius: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
       border: 1px solid #ccc;
+      margin-top: 6px;
     }
-
-    button {
-      background: #111;
-      color: #fff;
-      cursor: pointer;
-      margin-top: 18px;
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    button { background:#111; color:#fff; cursor:pointer; margin-top: 14px; border-color:#111; }
+    button:disabled { opacity: 0.6; cursor:not-allowed; }
+    .rules { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
+    .rule {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 10px; border: 1px solid #eee; border-radius: 12px;
+      background: #fafafa;
     }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .status { margin-top: 16px; font-weight: 700; }
+    .rule input { margin-top: 3px; }
+    .rule b { display:block; }
+    .status { margin-top: 14px; font-weight: 800; }
     .ok { color: #0a6b0a; }
     .error { color: #b00020; }
-
     .results {
-      margin-top: 16px;
+      margin-top: 12px;
       border: 1px solid #ddd;
       border-radius: 12px;
       padding: 12px;
-      max-height: 350px;
+      max-height: 380px;
       overflow-y: auto;
+      line-height: 1.45;
       font-size: 15px;
-      line-height: 1.4;
+      background: #fff;
     }
-
-    code {
-      background: #f3f3f3;
-      padding: 2px 6px;
-      border-radius: 6px;
+    .pill {
+      display:inline-block; padding: 2px 8px; border:1px solid #ddd; border-radius: 999px;
+      font-size: 12px; color:#333; background:#f6f6f6;
     }
+    code { background:#f3f3f3; padding: 2px 6px; border-radius: 8px; }
+    details { margin-top: 10px; }
+    .small { font-size: 13px; }
   </style>
 </head>
 <body>
 
-<h1>Magyar keresztnév-kereső</h1>
-<div class="muted">
-  Szabályok:
-  <br>1️⃣ A vezetéknévben <b>lehet</b> betűismétlődés (pl. <code>Bárány</code> OK).
-  <br>2️⃣ A keresztnévben <b>nem lehet</b> betűismétlődés (pl. <code>Kati</code> OK, <code>Kata</code> NEM).
-  <br>3️⃣ A vezetéknév és keresztnév között ne legyen közös betű/token (magyar kettősbetűk egynek számítanak).
-  <br>4️⃣ Mássalhangzó ↔ magánhangzó váltakozás a névhatáron.
-</div>
+  <h1>Magyar keresztnév-kereső</h1>
+  <div class="muted">
+    Nevek: <code>lany_nevek.txt</code> és <code>fiu_nevek.txt</code> (soronként 1 név).
+    A szabályokat alul kapcsolgathatod.
+  </div>
 
-<label for="surname">Vezetéknév</label>
-<input id="surname" placeholder="pl. Bárány">
+  <div class="card">
+    <div class="row">
+      <div>
+        <label class="top" for="surname">Vezetéknév</label>
+        <input id="surname" type="text" placeholder="pl. Bárány" autocomplete="family-name">
+      </div>
+      <div>
+        <label class="top" for="gender">Keresztnév típusa</label>
+        <select id="gender">
+          <option value="female">Lány</option>
+          <option value="male">Fiú</option>
+        </select>
+      </div>
+    </div>
 
-<label for="gender">Keresztnév típusa</label>
-<select id="gender">
-  <option value="female">Lány</option>
-  <option value="male">Fiú</option>
-</select>
+    <label class="top" style="margin-top:16px;">Szabályok (tikkelős)</label>
+    <div class="rules">
+      <div class="rule">
+        <input id="rule_boundary_vc" type="checkbox" checked>
+        <div>
+          <b>Váltakozás a névhatáron (végződés ↔ kezdés)</b>
+          <div class="muted small">Ha a vezetéknév magánhangzóra végződik, a keresztnév mássalhangzóval kezdődjön; és fordítva.</div>
+        </div>
+      </div>
 
-<button id="runBtn">Összes megfelelő név listázása</button>
+      <div class="rule">
+        <input id="rule_given_no_repeat" type="checkbox" checked>
+        <div>
+          <b>Keresztnévben nincs ismétlődés</b>
+          <div class="muted small">Pl. <code>Kati</code> oké, <code>Kata</code nem (két <code>a</code>).</div>
+        </div>
+      </div>
 
-<div id="status" class="status"></div>
-<div id="results" class="results" style="display:none;"></div>
+      <div class="rule">
+        <input id="rule_cross_no_overlap" type="checkbox" checked>
+        <div>
+          <b>Vezetéknév és keresztnév között nincs közös “betű/token”</b>
+          <div class="muted small">A vezetéknév belső ismétlése nem gond; csak az a baj, ha ugyanaz a token megjelenik a keresztnévben is.</div>
+        </div>
+      </div>
+
+      <div class="rule">
+        <input id="rule_alliteration" type="checkbox">
+        <div>
+          <b>Alliteráció</b> <span class="pill">új</span>
+          <div class="muted small">A vezetéknév első tokenje egyezzen a keresztnév első tokenjével (pl. <code>Kovács K...</code>).</div>
+        </div>
+      </div>
+    </div>
+
+    <button id="runBtn">Összes megfelelő név listázása</button>
+
+    <div id="status" class="status"></div>
+    <div id="results" class="results" style="display:none;"></div>
+
+    <details>
+      <summary>Tokenizálás (mi számít „betűnek”?)</summary>
+      <div class="muted small">
+        Egy tokennek vesszük: <code>dzs</code>, <code>dz</code>, <code>cs</code>, <code>gy</code>, <code>ly</code>, <code>ny</code>, <code>sz</code>, <code>ty</code>, <code>zs</code>.
+        A többi karakter 1 token. (Ékezetes magánhangzók külön tokenek: <code>a</code> ≠ <code>á</code>.)
+      </div>
+    </details>
+  </div>
 
 <script>
 (() => {
+  // Magyar többjegyű betűk (hosszabb elöl!)
   const MULTI = ["dzs","dz","cs","gy","ly","ny","sz","ty","zs"];
   const VOWELS = new Set(["a","á","e","é","i","í","o","ó","ö","ő","u","ú","ü","ű"]);
 
@@ -100,9 +137,15 @@
   const $status  = document.getElementById("status");
   const $results = document.getElementById("results");
 
+  const $ruleBoundaryVC   = document.getElementById("rule_boundary_vc");
+  const $ruleGivenNoRep   = document.getElementById("rule_given_no_repeat");
+  const $ruleCrossNoOver  = document.getElementById("rule_cross_no_overlap");
+  const $ruleAlliteration = document.getElementById("rule_alliteration");
+
   function normalize(s) {
     return (s || "")
       .toLowerCase()
+      .trim()
       .replace(/[\s.\-’'"]/g, "");
   }
 
@@ -121,68 +164,106 @@
     return tokens.filter(Boolean);
   }
 
-  function isVowel(tok) { return VOWELS.has(tok); }
+  function isVowelToken(tok) { return VOWELS.has(tok); }
 
-  // csak keresztnévre használjuk: ott tényleg tiltsuk az ismétlést
-  function hasNoRepeats(tokens) {
-    return new Set(tokens).size === tokens.length;
+  function hasNoRepeats(tokens) { return new Set(tokens).size === tokens.length; }
+
+  async function loadTxt(path) {
+    const r = await fetch(path, { cache: "no-store" });
+    if (!r.ok) throw new Error("Nem tölthető: " + path + " (HTTP " + r.status + ")");
+    const text = await r.text();
+    return text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
   }
 
-  function canCombine(surname, given) {
+  function currentRules() {
+    return {
+      boundaryVC: $ruleBoundaryVC.checked,
+      givenNoRepeat: $ruleGivenNoRep.checked,
+      crossNoOverlap: $ruleCrossNoOver.checked,
+      alliteration: $ruleAlliteration.checked
+    };
+  }
+
+  function canCombine(surname, given, rules) {
     const sTok = tokenizeHu(surname);
     const gTok = tokenizeHu(given);
-
     if (sTok.length === 0 || gTok.length === 0) return false;
 
-    // (4) váltakozás a névhatáron
-    const endVowel   = isVowel(sTok[sTok.length - 1]);
-    const startVowel = isVowel(gTok[0]);
-    if (endVowel === startVowel) return false;
+    // Alliteráció: első token egyezzen
+    if (rules.alliteration) {
+      if (sTok[0] !== gTok[0]) return false;
+    }
 
-    // (2) keresztnévben nincs ismétlés -> ezért rossz a "Kata"
-    if (!hasNoRepeats(gTok)) return false;
+    // Váltakozás a névhatáron: vége ↔ eleje (mgh/msh)
+    if (rules.boundaryVC) {
+      const endVowel   = isVowelToken(sTok[sTok.length - 1]);
+      const startVowel = isVowelToken(gTok[0]);
+      if (endVowel === startVowel) return false;
+    }
 
-    // (3) vezetéknév és keresztnév között ne legyen közös token
-    // Itt a vezetéknév duplikátumait figyelmen kívül hagyjuk (Set)
-    const sSet = new Set(sTok);
-    for (const t of gTok) {
-      if (sSet.has(t)) return false;
+    // Keresztnévben nincs ismétlődés
+    if (rules.givenNoRepeat) {
+      if (!hasNoRepeats(gTok)) return false;
+    }
+
+    // Nincs közös token a vezetéknév és keresztnév között
+    // (a vezetéknév belső ismétlése itt nem számít)
+    if (rules.crossNoOverlap) {
+      const sSet = new Set(sTok);
+      for (const t of gTok) {
+        if (sSet.has(t)) return false;
+      }
     }
 
     return true;
   }
 
-  async function loadTxt(path) {
-    const r = await fetch(path, { cache: "no-store" });
-    if (!r.ok) throw new Error("Nem tölthető: " + path);
-    const text = await r.text();
-    return text.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  function describeRules(r) {
+    const on = [];
+    if (r.boundaryVC) on.push("váltakozás a névhatáron");
+    if (r.givenNoRepeat) on.push("keresztnévben nincs ismétlés");
+    if (r.crossNoOverlap) on.push("nincs közös token a két név között");
+    if (r.alliteration) on.push("alliteráció (azonos kezdő token)");
+    return on.length ? on.join(", ") : "nincsenek bekapcsolt szabályok";
   }
 
   $runBtn.addEventListener("click", async () => {
     const surname = $surname.value.trim();
     if (!surname) {
       $status.innerHTML = "<span class='error'>Adj meg vezetéknevet.</span>";
+      $results.style.display = "none";
       return;
     }
 
+    const rules = currentRules();
+
     $runBtn.disabled = true;
     $results.style.display = "none";
+    $results.innerHTML = "";
     $status.textContent = "Névlista betöltése…";
 
     try {
-      const file = $gender.value === "female" ? "lany_nevek.txt" : "fiu_nevek.txt";
+      const file = ($gender.value === "female") ? "lany_nevek.txt" : "fiu_nevek.txt";
       const names = await loadTxt(file);
 
-      const matches = names.filter(n => canCombine(surname, n));
+      const matches = [];
+      for (const n of names) {
+        if (canCombine(surname, n, rules)) matches.push(n);
+      }
 
       if (matches.length === 0) {
-        $status.innerHTML = "<span class='error'>Nincs megfelelő keresztnév.</span>";
+        $status.innerHTML =
+          "<span class='error'>A jelenlegi szabályok szerint nem lehet találni ilyen nevet.</span><br>" +
+          `<span class="muted small">Bekapcsolt szabályok: ${describeRules(rules)}.</span>`;
         $runBtn.disabled = false;
         return;
       }
 
-      $status.innerHTML = `<span class='ok'>${matches.length} megfelelő keresztnév található.</span>`;
+      $status.innerHTML =
+        `<span class='ok'>Kész: ${matches.length} találat.</span><br>` +
+        `<span class="muted small">Bekapcsolt szabályok: ${describeRules(rules)}.</span>`;
+
+      // Egyben listázzuk: "Vezetéknév Keresztnév"
       $results.innerHTML = matches.map(n => `${surname} ${n}`).join("<br>");
       $results.style.display = "block";
 
@@ -191,6 +272,11 @@
     }
 
     $runBtn.disabled = false;
+  });
+
+  // Enter a vezetéknévnél indít
+  $surname.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $runBtn.click();
   });
 
 })();
