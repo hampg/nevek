@@ -1,290 +1,211 @@
 <!doctype html>
 <html lang="hu">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Magyar keresztnév-választó (TXT listából)</title>
+  <meta charset="utf-8">
+  <title>Magyar keresztnév-kereső</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; max-width: 860px; margin: 40px auto; padding: 0 16px; }
-    h1 { margin: 0 0 8px; }
-    .muted { color: #555; line-height: 1.4; }
-    .card { border: 1px solid #ddd; border-radius: 14px; padding: 16px; margin-top: 16px; }
-    label { display:block; margin: 12px 0 6px; font-weight: 700; }
-    input, select, button { font-size: 16px; padding: 10px 12px; border-radius: 12px; border: 1px solid #ccc; }
-    input, select { width: 100%; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    button { cursor: pointer; border-color: #111; background: #111; color: #fff; margin-top: 14px; }
-    button:hover { opacity: 0.92; }
-    button:disabled { opacity: 0.55; cursor: not-allowed; }
-    .result { font-size: 22px; font-weight: 900; margin-top: 14px; }
-    .error { color: #b00020; font-weight: 800; }
-    .ok { color: #0b6b0b; font-weight: 800; }
-    details { margin-top: 12px; }
-    code { background: #f6f6f6; padding: 2px 6px; border-radius: 8px; }
-    .small { font-size: 14px; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 16px;
+    }
+
+    h1 { margin-bottom: 6px; }
+
+    .muted { color: #555; }
+
+    label {
+      display: block;
+      margin-top: 14px;
+      font-weight: 700;
+    }
+
+    input, select, button {
+      width: 100%;
+      font-size: 16px;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      background: #111;
+      color: #fff;
+      cursor: pointer;
+      margin-top: 18px;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .status {
+      margin-top: 16px;
+      font-weight: 700;
+    }
+
+    .ok { color: #0a6b0a; }
+    .error { color: #b00020; }
+
+    .results {
+      margin-top: 16px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 12px;
+      max-height: 350px;
+      overflow-y: auto;
+      font-size: 15px;
+      line-height: 1.4;
+    }
+
+    code {
+      background: #f3f3f3;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
-  <h1>Magyar keresztnév-választó</h1>
-  <div class="muted">
-    Betöltés: <code>lany_nevek.txt</code> és <code>fiu_nevek.txt</code> (soronként 1 név).
-    <br/>
-    Szabályok:
-    (1) a vezetéknév+keresztnév tokenizált „betűi” nem ismétlődhetnek (pl. <code>sz</code> egy betű),
-    (2) ha a vezetéknév mássalhangzóra végződik, a keresztnév magánhangzóval kezdődjön, és fordítva.
-  </div>
 
-  <div class="card">
-    <div class="row">
-      <div>
-        <label for="surname">Vezetéknév</label>
-        <input id="surname" placeholder="pl. Kovács" autocomplete="family-name" />
-      </div>
-      <div>
-        <label for="gender">Keresztnév típusa</label>
-        <select id="gender">
-          <option value="female">Lány</option>
-          <option value="male">Fiú</option>
-        </select>
-      </div>
-    </div>
+<h1>Magyar keresztnév-kereső</h1>
+<div class="muted">
+  Szabályok:
+  <br>1️⃣ nincs betűismétlés a vezetéknév + keresztnév együtteseiben (magyar kettősbetűk egynek számítanak)
+  <br>2️⃣ mássalhangzó ↔ magánhangzó váltakozás a névhatáron
+</div>
 
-    <div class="row">
-      <div>
-        <label for="tries">Max. próbálkozás</label>
-        <select id="tries">
-          <option value="200">200</option>
-          <option value="1000" selected>1000</option>
-          <option value="5000">5000</option>
-          <option value="20000">20000</option>
-        </select>
-      </div>
-      <div>
-        <label for="files">TXT fájlok</label>
-        <div class="muted small">
-          Lány: <code>lany_nevek.txt</code><br/>
-          Fiú: <code>fiu_nevek.txt</code>
-        </div>
-      </div>
-    </div>
+<label for="surname">Vezetéknév</label>
+<input id="surname" placeholder="pl. Kovács">
 
-    <button id="pickBtn">Név választása</button>
+<label for="gender">Keresztnév típusa</label>
+<select id="gender">
+  <option value="female">Lány</option>
+  <option value="male">Fiú</option>
+</select>
 
-    <div id="status" class="muted" style="margin-top:10px;"></div>
-    <div id="out" class="result" aria-live="polite"></div>
-    <div id="debug" class="muted small" style="margin-top:8px;"></div>
+<button id="runBtn">Összes megfelelő név listázása</button>
 
-    <details>
-      <summary>Tokenizálás (magyar többjegyű betűk)</summary>
-      <div class="muted small">
-        Ezeket egy betűnek vesszük: <code>dzs</code>, <code>dz</code>, <code>cs</code>, <code>gy</code>, <code>ly</code>, <code>ny</code>, <code>sz</code>, <code>ty</code>, <code>zs</code>.
-        <br/>Példa: az <code>s</code> és az <code>sz</code> nem ütköznek, mert külön tokenek.
-      </div>
-    </details>
-
-    <details>
-      <summary>Hogyan futtasd?</summary>
-      <div class="muted small">
-        A <code>fetch()</code> miatt a böngésző sokszor nem engedi a fájlok betöltését <code>file://</code> módban.
-        Indíts kis szervert:
-        <br/>• VS Code: Live Server
-        <br/>• vagy terminálban a mappában: <code>python -m http.server</code> és nyisd meg: <code>http://localhost:8000</code>
-      </div>
-    </details>
-  </div>
+<div id="status" class="status"></div>
+<div id="results" class="results" style="display:none;"></div>
 
 <script>
 (() => {
-  // Magyar többjegyű betűk (hosszabb elöl!)
-  const MULTI = ["dzs","dz","cs","gy","ly","ny","sz","ty","zs"];
 
-  // Magyar magánhangzók (token szinten: itt mind 1 karakteresek)
+  const MULTI = ["dzs","dz","cs","gy","ly","ny","sz","ty","zs"];
   const VOWELS = new Set(["a","á","e","é","i","í","o","ó","ö","ő","u","ú","ü","ű"]);
 
-  // Cache-eljük a betöltött névlistákat (hogy 1x töltsük le)
-  const nameCache = {
-    female: null,
-    male: null
-  };
-
   const $surname = document.getElementById("surname");
-  const $gender = document.getElementById("gender");
-  const $tries = document.getElementById("tries");
-  const $pickBtn = document.getElementById("pickBtn");
-  const $status = document.getElementById("status");
-  const $out = document.getElementById("out");
-  const $debug = document.getElementById("debug");
-
-  function setStatus(html) { $status.innerHTML = html; }
-  function setOut(text) { $out.textContent = text; }
-  function setDebug(html) { $debug.innerHTML = html; }
+  const $gender  = document.getElementById("gender");
+  const $runBtn  = document.getElementById("runBtn");
+  const $status  = document.getElementById("status");
+  const $results = document.getElementById("results");
 
   function normalize(s) {
     return (s || "")
       .toLowerCase()
-      .trim()
-      .replace(/[\s.\-’'"]/g, ""); // szóköz, pont, kötőjel, idézők ki
+      .replace(/[\s.\-’'"]/g, "");
   }
 
-  // Tokenizálás magyar betűkre (pl. "sz" 1 token)
   function tokenizeHu(word) {
     const s = normalize(word);
     const tokens = [];
     let i = 0;
 
     while (i < s.length) {
-      let matched = null;
+      let found = null;
       for (const m of MULTI) {
-        if (s.startsWith(m, i)) { matched = m; break; }
+        if (s.startsWith(m, i)) {
+          found = m;
+          break;
+        }
       }
-      if (matched) {
-        tokens.push(matched);
-        i += matched.length;
+      if (found) {
+        tokens.push(found);
+        i += found.length;
       } else {
         tokens.push(s[i]);
-        i += 1;
+        i++;
       }
     }
-    return tokens.filter(Boolean);
+    return tokens;
   }
 
-  function isVowelToken(tok) {
-    // többjegyűek mind mássalhangzók; magánhangzó token 1 hosszú, VOWELS-ben
+  function isVowel(tok) {
     return VOWELS.has(tok);
   }
 
-  function uniqueNoRepeat(tokens) {
-    const seen = new Set();
-    for (const t of tokens) {
-      if (seen.has(t)) return false;
-      seen.add(t);
-    }
-    return true;
+  function unique(tokens) {
+    return new Set(tokens).size === tokens.length;
   }
 
   function canCombine(surname, given) {
     const sTok = tokenizeHu(surname);
     const gTok = tokenizeHu(given);
 
-    if (sTok.length === 0) return { ok:false, why:"Üres vagy érvénytelen vezetéknév." };
-    if (gTok.length === 0) return { ok:false, why:"Üres vagy érvénytelen keresztnév." };
+    if (!unique(sTok) || !unique(gTok)) return false;
 
-    // (2) végződés–kezdés váltakozás (mgh ↔ msh)
-    const surnameEndsVowel = isVowelToken(sTok[sTok.length - 1]);
-    const givenStartsVowel = isVowelToken(gTok[0]);
-    if (surnameEndsVowel === givenStartsVowel) {
-      return {
-        ok:false,
-        why:`Váltakozási szabály sérül (vezetéknév vége: ${surnameEndsVowel ? "magánhangzó" : "mássalhangzó"}, keresztnév eleje: ${givenStartsVowel ? "magánhangzó" : "mássalhangzó"}).`
-      };
-    }
+    const endVowel   = isVowel(sTok[sTok.length - 1]);
+    const startVowel = isVowel(gTok[0]);
+    if (endVowel === startVowel) return false;
 
-    // (1) ismétlés tiltása (külön-külön és együtt)
-    if (!uniqueNoRepeat(sTok)) return { ok:false, why:"A vezetéknévben token-ismétlés van." };
-    if (!uniqueNoRepeat(gTok)) return { ok:false, why:"A keresztnévben token-ismétlés van." };
-
-    const all = [...sTok, ...gTok];
-    if (!uniqueNoRepeat(all)) return { ok:false, why:"A vezetéknév + keresztnév együtt token-ismétlést tartalmaz." };
-
-    return { ok:true, why:"OK" };
+    return unique([...sTok, ...gTok]);
   }
 
-  function shuffle(arr) {
-    const a = arr.slice();
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
+  async function loadTxt(path) {
+    const r = await fetch(path, { cache: "no-store" });
+    if (!r.ok) throw new Error("Nem tölthető: " + path);
+    return r.text().then(t =>
+      t.split(/\r?\n/).map(x => x.trim()).filter(Boolean)
+    );
   }
 
-  async function loadNamesFromTxt(path) {
-    const resp = await fetch(path, { cache: "no-store" });
-    if (!resp.ok) throw new Error(`Nem sikerült betölteni: ${path} (HTTP ${resp.status})`);
-    const text = await resp.text();
-    return text
-      .split(/\r?\n/)
-      .map(s => s.trim())
-      .filter(Boolean);
-  }
-
-  async function getPool(gender) {
-    if (gender === "female") {
-      if (nameCache.female) return nameCache.female;
-      const list = await loadNamesFromTxt("lany_nevek.txt");
-      nameCache.female = list;
-      return list;
-    } else {
-      if (nameCache.male) return nameCache.male;
-      const list = await loadNamesFromTxt("fiu_nevek.txt");
-      nameCache.male = list;
-      return list;
-    }
-  }
-
-  $pickBtn.addEventListener("click", async () => {
-    setOut("");
-    setDebug("");
-    const surname = ($surname.value || "").trim();
+  $runBtn.addEventListener("click", async () => {
+    const surname = $surname.value.trim();
     if (!surname) {
-      setStatus("<span class='error'>Írj be egy vezetéknevet.</span>");
+      $status.innerHTML = "<span class='error'>Adj meg vezetéknevet.</span>";
       return;
     }
 
-    const gender = $gender.value;
-    const maxTries = parseInt($tries.value, 10) || 1000;
+    $runBtn.disabled = true;
+    $results.style.display = "none";
+    $status.textContent = "Névlista betöltése…";
 
-    $pickBtn.disabled = true;
-    setStatus("Névlista betöltése…");
-
-    let pool;
     try {
-      pool = await getPool(gender);
-    } catch (e) {
-      setStatus(`<span class='error'>Hiba a TXT betöltésénél:</span> ${String(e.message || e)}`);
-      setDebug("Tipp: futtasd helyi szerverről (pl. VS Code Live Server vagy <code>python -m http.server</code>), és ellenőrizd, hogy a TXT fájlok az <code>index.html</code> mellett vannak.");
-      $pickBtn.disabled = false;
-      return;
-    }
+      const file = $gender.value === "female"
+        ? "lany_nevek.txt"
+        : "fiu_nevek.txt";
 
-    if (!pool || pool.length === 0) {
-      setStatus("<span class='error'>A névlista üres.</span> Ellenőrizd a TXT fájlt.");
-      $pickBtn.disabled = false;
-      return;
-    }
+      const names = await loadTxt(file);
+      const matches = names.filter(n => canCombine(surname, n));
 
-    setStatus(`<span class='ok'>Betöltve:</span> ${pool.length} név. Keresés…`);
-
-    const candidates = shuffle(pool);
-    let bestFail = null;
-
-    for (let t = 0; t < maxTries; t++) {
-      const given = candidates[t % candidates.length];
-      const check = canCombine(surname, given);
-
-      if (check.ok) {
-        setOut(`${surname} ${given}`);
-        setStatus(`<span class='ok'>Siker!</span> Találtam ${t + 1} próbálkozás után.`);
-        setDebug(`Tokenek: <code>${tokenizeHu(surname).join(" · ")}</code> + <code>${tokenizeHu(given).join(" · ")}</code>`);
-        $pickBtn.disabled = false;
+      if (matches.length === 0) {
+        $status.innerHTML = "<span class='error'>Nincs megfelelő keresztnév.</span>";
+        $runBtn.disabled = false;
         return;
-      } else if (!bestFail) {
-        bestFail = { given, why: check.why };
       }
+
+      $status.innerHTML =
+        `<span class='ok'>${matches.length} megfelelő keresztnév található.</span>`;
+
+      $results.innerHTML =
+        matches.map(n => `${surname} ${n}`).join("<br>");
+
+      $results.style.display = "block";
+    } catch (e) {
+      $status.innerHTML =
+        `<span class='error'>Hiba:</span> ${e.message}`;
     }
 
-    setStatus(`<span class='error'>Nem találtam megfelelő nevet</span> ${maxTries} próbálkozásból.`);
-    if (bestFail) {
-      setDebug(`Példa elutasítás: <b>${surname} ${bestFail.given}</b><br/>Ok: ${bestFail.why}`);
-    }
-    $pickBtn.disabled = false;
+    $runBtn.disabled = false;
   });
 
-  // Kis extra UX: Enter a vezetéknév mezőben indít
-  $surname.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") $pickBtn.click();
-  });
 })();
 </script>
+
 </body>
 </html>
