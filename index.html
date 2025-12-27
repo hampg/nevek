@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
   <meta charset="utf-8">
-  <title>Magyar keresztnév-kereső (szabálykapcsolókkal)</title>
+  <title>A tökéletes keresztnév</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
@@ -57,8 +57,8 @@
 
   <h1>Magyar keresztnév-kereső</h1>
   <div class="muted">
-    Nevek: <code>lany_nevek.txt</code> és <code>fiu_nevek.txt</code> (soronként 1 név).
-    A szabályokat alul kapcsolgathatod.
+<--    Nevek: <code>lany_nevek.txt</code> és <code>fiu_nevek.txt</code> (soronként 1 név).
+    A szabályokat alul kapcsolgathatod. -->
   </div>
 
   <div class="card">
@@ -68,7 +68,7 @@
         <input id="surname" type="text" placeholder="pl. Bárány" autocomplete="family-name">
       </div>
       <div>
-        <label class="top" for="gender">Keresztnév típusa</label>
+        <label class="top" for="gender">Lány vagy fiú?</label>
         <select id="gender">
           <option value="female">Lány</option>
           <option value="male">Fiú</option>
@@ -89,7 +89,7 @@
       <div class="rule">
         <input id="rule_given_no_repeat" type="checkbox" checked>
         <div>
-          <b>Keresztnévben nincs ismétlődés</b>
+          <b>Keresztnévben nincs betűismétlődés</b>
           <div class="muted small">Pl. <code>Kati</code> oké, <code>Kata</code nem (két <code>a</code>).</div>
         </div>
       </div>
@@ -97,7 +97,7 @@
       <div class="rule">
         <input id="rule_cross_no_overlap" type="checkbox" checked>
         <div>
-          <b>Vezetéknév és keresztnév között nincs közös “betű/token”</b>
+          <b>Vezetéknév és keresztnév között nincs közös betű</b>
           <div class="muted small">A vezetéknév belső ismétlése nem gond; csak az a baj, ha ugyanaz a token megjelenik a keresztnévben is.</div>
         </div>
       </div>
@@ -106,7 +106,7 @@
         <input id="rule_alliteration" type="checkbox">
         <div>
           <b>Alliteráció</b> <span class="pill">új</span>
-          <div class="muted small">A vezetéknév első tokenje egyezzen a keresztnév első tokenjével (pl. <code>Kovács K...</code>).</div>
+          <div class="muted small">A vezetéknév első hangja egyezzen a keresztnév első hangjával (pl. <code>Kovács K...</code>).</div>
         </div>
       </div>
     </div>
@@ -117,10 +117,10 @@
     <div id="results" class="results" style="display:none;"></div>
 
     <details>
-      <summary>Tokenizálás (mi számít „betűnek”?)</summary>
+      <summary>Mi számít „betűnek”?</summary>
       <div class="muted small">
-        Egy tokennek vesszük: <code>dzs</code>, <code>dz</code>, <code>cs</code>, <code>gy</code>, <code>ly</code>, <code>ny</code>, <code>sz</code>, <code>ty</code>, <code>zs</code>.
-        A többi karakter 1 token. (Ékezetes magánhangzók külön tokenek: <code>a</code> ≠ <code>á</code>.)
+        Egy betűnek vesszük: <code>dzs</code>, <code>dz</code>, <code>cs</code>, <code>gy</code>, <code>ly</code>, <code>ny</code>, <code>sz</code>, <code>ty</code>, <code>zs</code>.
+        A többi karakter 1 token. (Ékezetes magánhangzók külön betűk: <code>a</code> ≠ <code>á</code>.)
       </div>
     </details>
   </div>
